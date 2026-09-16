@@ -1,43 +1,30 @@
 # 基于 LSTM 神经网络的股票价格预测系统
 
-本项目使用截至第 t 个交易日的数据预测第 t+1 个交易日收盘价。当前已完成阶段 5：数据获取、清洗、时间划分、滑动窗口、传统基线，以及 PyTorch LSTM 训练、预测与持久化。
+使用截至第 t 个交易日的数据，预测第 t+1 个交易日收盘价。项目已完成阶段 0—9，包含行情导入、清洗、顺序划分、训练集缩放、滑动窗口、传统基线、PyTorch LSTM、统一回测、实验追溯、Streamlit 展示及离线答辩资源。
 
-> 本系统仅用于教学与科研演示，不构成任何投资建议。
+> 仅用于教学与科研演示，不构成投资建议、收益承诺或交易依据。
 
-## 运行环境
+## 1. 环境与安装
 
 - Python 3.12
-- Windows PowerShell（以下命令以 PowerShell 为例）
-
-## 创建并激活虚拟环境
+- Windows PowerShell（核心 Python 模块也可在其他平台运行）
 
 ```powershell
+Set-Location <项目目录>
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-```
-
-如果 PowerShell 阻止激活脚本，可在当前终端执行：
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-## 安装依赖
-
-先单独安装匹配本机驱动的 GPU 版 PyTorch，再安装其余依赖：
-
-```powershell
-python -m pip install torch --index-url https://download.pytorch.org/whl/cu126
 python -m pip install -r requirements.txt
-python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+python -m pip check
 ```
 
-`pyarrow` 是 Parquet 可选依赖；未安装或 Parquet 写入不受支持时，行情仓库会自动回退为 UTF-8 CSV，不影响离线流程。
+GPU 用户可先按本机 CUDA 环境安装匹配的 PyTorch，再安装 `requirements.txt`。CPU 环境可直接运行测试、离线演示和小型训练。完整说明见 `docs/安装说明.md`。
 
-## Tushare Token
+## 2. 数据与配置
 
-复制示例文件并填写 Token，禁止提交 `.env`：
+标准字段：`ts_code、trade_date、open、high、low、close、vol、amount`。数据按 `trade_date` 升序并去重，训练/验证/测试按 70%/15%/15% 顺序划分，不使用 shuffle。Scaler 只在训练集拟合。
+
+Tushare Token 只允许写入未提交的 `.env`：
 
 ```powershell
 Copy-Item .env.example .env
@@ -47,142 +34,62 @@ Copy-Item .env.example .env
 TUSHARE_TOKEN=你的Token
 ```
 
-Token 仅从环境变量或 `.env` 读取。**没有 Token 时仍可通过本地 CSV 完成后续流程**，CSV 导入和缓存读取不会初始化 Tushare 客户端。
+无 Token 时可使用 CSV、本地缓存或内置离线答辩资源。
 
-## 标准行情字段
-
-CSV 至少包含以下字段；允许携带额外列，但缓存只保留标准列：
-
-```text
-ts_code,trade_date,open,high,low,close,vol,amount
-```
-
-- `trade_date` 支持 `YYYY-MM-DD` 和 `YYYYMMDD`，导入后统一升序。
-- 单个文件只能包含一个 `ts_code`。
-- 重复交易日期会在质量报告中记录，缓存前保留输入中最后一条记录。
-- 非正价格、负成交量/成交额和 OHLC 逻辑异常会写入质量报告，不会被伪造或静默修正。
-
-## 获取或导入行情
-
-从本地 CSV 导入（无需 Token）：
-
-```powershell
-python scripts/fetch_data.py --cache-dir data/cache csv --file data/example.csv --ts-code 600000.SH
-```
-
-从 Tushare 获取：
-
-```powershell
-python scripts/fetch_data.py tushare --ts-code 600000.SH --start-date 2020-01-01 --end-date 2025-12-31
-```
-
-已有缓存默认拒绝覆盖。需要显式选择覆盖或增量更新：
-
-```powershell
-python scripts/fetch_data.py --overwrite csv --file data/example.csv
-python scripts/fetch_data.py --incremental tushare --ts-code 600000.SH --start-date 2026-01-01 --end-date 2026-09-16
-```
-
-命令输出缓存格式、行数、增量新增/替换数量和数据质量报告。缓存目录同时保存 `*.cache.json` 活动清单和 `*.quality.json` 质量报告。证券代码会转换为安全文件名，不能借助 `..`、斜杠或反斜杠逃逸缓存目录。
-
-## 缓存策略
-
-- 默认优先写 Parquet；缺少引擎或格式写入失败时回退 CSV。
-- 保存、覆盖和增量更新均先完成字段与类型校验，再以临时文件原子替换。
-- 增量更新按 `ts_code + trade_date` 合并；重叠日期由新数据替换，新日期按升序写入。
-- 活动格式由缓存清单记录，不依赖同时存在的旧格式副本。
-
-## 配置文件
-
-默认配置位于 `configs/default.yaml`，包括 70%/15%/15% 时间顺序划分比例、60 个交易日窗口、LSTM 默认超参数、随机种子和项目相对存储目录。运行目录由 `src/config.py` 解析，配置中不得写用户绝对路径或固定盘符。
-
-## 数据预处理
-
-阶段 3 数据层按以下顺序调用：
-
-```python
-cleaned = clean_market_data(raw_frame)
-split = split_by_time(cleaned.data, (0.70, 0.15, 0.15))
-scaler = ScalerManager.fit(split, ("close",))
-windows = build_windows(split, scaler, ("close",), window_size=60)
-```
-
-Scaler 只能从 `TemporalSplit.train` 拟合；验证集与测试集只做转换。多变量特征顺序固定为
-`open, high, low, close, vol, amount`。详细规则和跨边界日期示例见 `docs/数据处理说明.md`。
-
-## 传统基线模型
-
-阶段 4 提供统一 `ForecastModel` 接口和 `target_date、previous_close、actual、predicted、model_name` 输出。默认基线为 Naive、MA5、MA10、MA20、SES 和 ARIMA；正式比较统一使用滚动一步协议，统计参数只在训练集拟合。详细规则见 `docs/基线模型说明.md`。
-
-## PyTorch LSTM
-
-阶段 5 使用同一个 `LSTMRegressor` 支持单变量 `close` 和六变量输入。训练器固定使用 MSELoss、Adam 和验证集 Early Stopping，训练结束后恢复验证损失最低的权重；测试集不参与训练、调参或早停。模型、Scaler 和逐 epoch 训练历史分别保存。详细规则见 `docs/LSTM模型说明.md`。
-
-从本地 CSV 训练单变量模型：
-
-```powershell
-python scripts/train_model.py --file data/example.csv --mode univariate --device auto
-```
-
-训练多变量模型时将 `--mode` 改为 `multivariate`。
-
-## 评价、统一测试集回测与实验记录
-
-阶段 6 提供 RMSE、MAE、R²、三分类方向准确率 DA 和相对 Naive RMSE 提升率。所有模型必须先对齐公共 `target_date`；验证集只用于 Early Stopping/参数选择，测试集只在固定模型后评价一次。R² 仅作价格水平拟合度参考，不用于模型排名。详细规则见 `docs/评价与回测说明.md`。
-
-一次运行六种单变量基线与固定单变量 LSTM：
-
-```powershell
-python scripts/run_experiment.py --file data/example.csv --result-kind test --device auto
-```
-
-默认 `result-kind=test`，固定小样例和自动测试结果不得作为论文正式结论。实验按 `experiment_id` 保存配置 JSON、指标 JSON/CSV、逐日预测 CSV、模型比较 CSV、日期对齐记录、模型、Scaler 和训练历史。
-## 运行测试
-
-测试不访问真实网络，Tushare 使用 mock：
-
-```powershell
-python -m pytest tests/test_lstm.py -q
-python -m pytest -q
-```
-
-## 启动 Streamlit
+## 3. 启动系统
 
 ```powershell
 python -m streamlit run app.py
 ```
 
-页面刷新不会自动获取数据或启动训练。阶段 7 已接入完整交互页面；模型训练只会由按钮主动触发，页面刷新不会自动训练。
+推荐离线答辩路径：
 
-## 目录说明
+1. “数据获取”选择“离线演示”，加载 `demo/offline_market.csv`。
+2. “数据分析”查看 K 线、均线、成交量、收益率和相关性。
+3. “预测分析”选择 `offline_demo_stage9`，直接加载预训练模型和已生成预测。
+4. “模型对比”展示公共测试日期上的 Naive、MA、SES、ARIMA 和单变量 LSTM。
+5. 不点击训练按钮即可完成演示；页面刷新不会自动训练。
 
-- `src/data/`：标准字段、CSV、Tushare、质量报告、缓存、清洗、时间划分、Scaler 与窗口数据集
-- `src/models/`：LSTM 网络、随机种子、训练器、预测器与模型持久化
-- `scripts/train_model.py`：从本地 CSV 训练单变量或多变量 LSTM
-- `scripts/fetch_data.py`：阶段 2 命令行入口
-- `data/cache/`：本地行情缓存（不入版本库）
-- `src/baselines/`：Naive、移动平均、SES、ARIMA 与统一回测协议
-- `src/evaluation/`：阶段 6 实现评价指标、回测与实验管理
-- `configs/`：YAML 配置
-- `tests/`：不访问真实网络的自动测试
-- `artifacts/`：模型与实验产物（不入版本库）
+首次启动会把 `demo/offline_demo_stage9/` 复制到运行目录 `artifacts/experiments/`（若目标不存在），不会覆盖用户实验。
 
-
-## Streamlit 可视化系统
-
-启动命令：
+## 4. 命令行闭环
 
 ```powershell
-python -m streamlit run app.py
+python scripts/run_experiment.py `
+  --file demo/offline_market.csv `
+  --config tests/fixtures/stage6_test_config.yaml `
+  --output-dir artifacts/experiments `
+  --experiment-id local_e2e_check `
+  --result-kind test `
+  --device cpu
 ```
 
-系统包含首页、数据获取、数据分析、模型训练、预测分析和模型对比六个页面。页面只调用 `src/services/` 业务服务：
+该命令覆盖 CSV 读取、清洗、划分、缩放、窗口、小型 LSTM 训练、预测、传统基线、指标和实验保存。`test` 结果不得冒充论文正式结论。
 
-- 数据获取支持 Tushare、UTF-8 CSV、本地缓存和固定离线演示样例；
-- 数据分析提供 Plotly K 线、收盘价与 MA5/10/20、成交量、收益率分布和相关性热力图；
-- 模型训练支持单变量/多变量 LSTM 参数配置、实时 Epoch 进度、Early Stopping 和最佳模型保存；
-- 预测分析支持已有实验/预训练模型、测试集曲线、逐日误差、指标卡和下一交易日估算；
-- 模型对比展示 Naive、MA5/10/20、SES、ARIMA 与 LSTM，并可下载指标和逐日预测 CSV；
-- 当前数据、最近训练和实验 ID 保存在 `st.session_state`；服务对象使用 `cache_resource`，分析图与实验加载使用 `cache_data`。
+## 5. 测试与正式实验
 
-无 Token 时可上传 CSV 或加载本地缓存；“离线演示”使用固定小型测试样例，所有交互训练产物标记为 `test`，不得作为论文正式实验结论。多变量 LSTM 属于特征消融，不与传统单变量基线混入主排名。详细操作见 `docs/系统使用说明.md`。
+```powershell
+python -m pytest -q -p no:cacheprovider --basetemp artifacts/test_tmp
+python scripts/check_stage8_consistency.py artifacts/stage8/formal_20260916_1805
+```
+
+若系统临时目录权限受限，应把 `--basetemp` 指向项目内可写目录。正式实验使用真实 BaoStock 行情，结果见 `artifacts/stage8/formal_20260916_1805/` 与 `docs/实验结果分析.md`。正式结论显示单变量 LSTM 并未优于 Naive，项目未隐瞒负结果。
+
+## 6. 关键正确性约束
+
+- 验证集只用于调参和 Early Stopping；测试集固定后只做最终评价。
+- 保存验证损失最低 epoch 的权重，不保存最后 epoch 冒充最佳模型。
+- 输入窗口结束日期严格早于目标日期；目标日真实值不进入特征。
+- Naive/MA 先预测再读取已实现值；全部模型只在公共目标日期上比较。
+- 主比较只含传统单变量模型与仅 close 的单变量 LSTM；多变量 LSTM 单列为特征消融。
+- 排名依据 DA、相对 Naive RMSE 提升率及 RMSE；R² 仅作参考。
+
+## 7. 文档入口
+
+- 安装：`docs/安装说明.md`
+- 使用：`docs/系统使用说明.md`
+- 测试：`docs/系统测试报告.md`
+- 常见问题：`docs/常见问题.md`
+- 答辩流程：`docs/答辩演示流程.md`
+- 交付清单：`docs/最终交付清单.md`
+- 已知问题：`docs/已知问题清单.md`

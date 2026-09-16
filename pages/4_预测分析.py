@@ -30,7 +30,8 @@ try:
     else:
         st.info("该历史实验未保存下一交易日预测。可用当前数据加载预训练模型实时计算。")
         if st.button("加载预训练模型并预测下一交易日"):
-            output = service.training.load_pretrained_prediction(experiment_id, context.frame)
+            with st.spinner("正在校验并加载预训练模型……"):
+                output = service.training.load_pretrained_prediction(experiment_id, context.frame)
             st.dataframe(output, width="stretch", hide_index=True)
 except Exception as exc:
     show_error(exc)

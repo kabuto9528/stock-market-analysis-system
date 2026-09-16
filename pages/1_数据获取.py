@@ -24,7 +24,8 @@ try:
         upload = st.file_uploader("上传 UTF-8 CSV", type=["csv"])
         save_cache = st.checkbox("导入成功后保存到本地缓存")
         if st.button("导入 CSV", type="primary", disabled=upload is None):
-            context = service.data.import_csv_bytes(upload.name, upload.getvalue(), code.strip() or None, save_cache=save_cache)
+            with st.spinner("正在读取、清洗并校验 CSV……"):
+                context = service.data.import_csv_bytes(upload.name, upload.getvalue(), code.strip() or None, save_cache=save_cache)
     elif source == "本地缓存":
         codes = service.data.list_cached_stocks()
         if not codes:
@@ -32,11 +33,13 @@ try:
         else:
             selected = st.selectbox("缓存股票", codes)
             if st.button("加载本地缓存", type="primary"):
-                context = service.data.load_cache(selected)
+                with st.spinner("正在加载本地缓存……"):
+                    context = service.data.load_cache(selected)
     else:
         st.caption("固定小型样例仅用于离线功能演示和自动测试，不是正式实验数据或论文结论。")
         if st.button("加载离线演示样例", type="primary"):
-            context = service.data.load_offline_demo()
+            with st.spinner("正在加载离线演示数据……"):
+                context = service.data.load_offline_demo()
     if context is not None:
         set_market_context(context)
         st.success(f"已加载 {context.ts_code}，共 {len(context.frame)} 行，来源：{context.source}")

@@ -1,0 +1,23 @@
+{
+  "best_epoch": 2,
+  "best_validation_loss": 0.03592621936247899,
+  "stopped_early": false,
+  "total_elapsed_seconds": 0.2382380999997622,
+  "device": "cpu",
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.1485940902902369,
+      "validation_loss": 0.23629754552474388,
+      "elapsed_seconds": 0.21382210000001578
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.027979848546939984,
+      "validation_loss": 0.03592621936247899,
+      "elapsed_seconds": 0.023222100000111823
+    }
+  ],
+  "validation_only_for_selection_and_early_stopping": true,
+  "test_samples_used_for_training_or_early_stopping": 0
+}

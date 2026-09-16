@@ -1,0 +1,68 @@
+{
+  "experiment_id": "offline_demo_stage9",
+  "comparison_partition": "test",
+  "ranking_basis": [
+    "direction_accuracy descending",
+    "relative_naive_rmse_improvement_pct descending",
+    "rmse ascending"
+  ],
+  "r2_usage": "R² 仅作价格水平拟合度参考，不用于模型排名。",
+  "metrics": {
+    "Naive": {
+      "sample_count": 15,
+      "rmse": 0.09942419237742743,
+      "mae": 0.0872333991640931,
+      "r2": 0.7631383875606124,
+      "direction_accuracy": 0.0,
+      "relative_naive_rmse_improvement_pct": 0.0
+    },
+    "MA5": {
+      "sample_count": 15,
+      "rmse": 0.2953578651292803,
+      "mae": 0.267331179435119,
+      "r2": -1.0902951751069292,
+      "direction_accuracy": 0.13333333333333333,
+      "relative_naive_rmse_improvement_pct": -197.06840766486957
+    },
+    "MA10": {
+      "sample_count": 15,
+      "rmse": 0.44147791894433763,
+      "mae": 0.39767269924597953,
+      "r2": -3.670125064593594,
+      "direction_accuracy": 0.26666666666666666,
+      "relative_naive_rmse_improvement_pct": -344.0347046204095
+    },
+    "MA20": {
+      "sample_count": 15,
+      "rmse": 0.46129426743625984,
+      "mae": 0.3977996454721354,
+      "r2": -4.098784452204408,
+      "direction_accuracy": 0.4666666666666667,
+      "relative_naive_rmse_improvement_pct": -363.9658179823333
+    },
+    "SES": {
+      "sample_count": 15,
+      "rmse": 0.099424193890773,
+      "mae": 0.08723340055981552,
+      "r2": 0.7631383803500238,
+      "direction_accuracy": 0.06666666666666667,
+      "relative_naive_rmse_improvement_pct": -1.5221099992555034e-06
+    },
+    "ARIMA": {
+      "sample_count": 15,
+      "rmse": 0.027304163242919732,
+      "mae": 0.024038748563558462,
+      "r2": 0.9821364289693633,
+      "direction_accuracy": 0.9333333333333333,
+      "relative_naive_rmse_improvement_pct": 72.53770677938273
+    },
+    "LSTM": {
+      "sample_count": 15,
+      "rmse": 0.9289022834669961,
+      "mae": 0.9105132414108777,
+      "r2": -19.67524185679615,
+      "direction_accuracy": 0.5333333333333333,
+      "relative_naive_rmse_improvement_pct": -834.2819501522927
+    }
+  }
+}

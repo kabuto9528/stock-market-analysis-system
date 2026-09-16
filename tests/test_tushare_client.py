@@ -79,6 +79,15 @@ def test_tushare_client_returns_sorted_standard_data() -> None:
     }
 
 
+def test_tushare_client_rejects_illegal_stock_code_before_network_call() -> None:
+    api = FakeAPI(_tushare_frame())
+    client = TushareClient("token", pro_api_factory=lambda token: api)
+
+    with pytest.raises(TushareAPIError, match="股票代码格式不合法"):
+        client.fetch_daily("600000", "2024-01-02", "2024-01-03")
+    assert api.kwargs is None
+
+
 def test_tushare_client_reports_empty_data() -> None:
     client = TushareClient(
         "token", pro_api_factory=lambda token: FakeAPI(pd.DataFrame())

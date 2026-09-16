@@ -43,3 +43,8 @@ artifacts/*
 *.temp
 .archive/
 .workbuddy/
+
+# ---- 可提交的离线答辩资源 ----
+!demo/
+!demo/**
+!demo/offline_demo_stage9/selected_lstm.pt

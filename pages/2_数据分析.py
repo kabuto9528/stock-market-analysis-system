@@ -6,7 +6,8 @@ init_session(); context = require_market_context()
 st.title(f"数据分析：{context.ts_code}")
 st.caption(f"来源：{context.source}；所有图表由 Plotly 生成，可缩放、悬停和下载。")
 try:
-    figures = cached_analysis(context.frame)
+    with st.spinner("正在生成分析图表……"):
+        figures = cached_analysis(context.frame)
     st.plotly_chart(figures["kline"], width="stretch")
     st.plotly_chart(figures["close_ma"], width="stretch")
     c1, c2 = st.columns(2)

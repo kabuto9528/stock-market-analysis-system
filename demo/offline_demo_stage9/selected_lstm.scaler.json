@@ -1,0 +1,62 @@
+{
+  "sha256": "74794b5d552c72fb7c11a2c7e5b407f2645c9164ec4d413f79755ccec9878406",
+  "payload": {
+    "format_version": 1,
+    "feature_columns": [
+      "close"
+    ],
+    "target_column": "close",
+    "training_interval": {
+      "start_date": "2024-01-02",
+      "end_date": "2024-03-27"
+    },
+    "feature_scaler": {
+      "feature_range": [
+        0.0,
+        1.0
+      ],
+      "clip": false,
+      "min": [
+        -8.974701002666878
+      ],
+      "scale": [
+        0.44873505013334386
+      ],
+      "data_min": [
+        20.0
+      ],
+      "data_max": [
+        22.22848649710524
+      ],
+      "data_range": [
+        2.2284864971052407
+      ],
+      "n_features_in": 1,
+      "n_samples_seen": 62
+    },
+    "target_scaler": {
+      "feature_range": [
+        0.0,
+        1.0
+      ],
+      "clip": false,
+      "min": [
+        -8.974701002666878
+      ],
+      "scale": [
+        0.44873505013334386
+      ],
+      "data_min": [
+        20.0
+      ],
+      "data_max": [
+        22.22848649710524
+      ],
+      "data_range": [
+        2.2284864971052407
+      ],
+      "n_features_in": 1,
+      "n_samples_seen": 62
+    }
+  }
+}

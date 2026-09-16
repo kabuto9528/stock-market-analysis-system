@@ -1,0 +1,171 @@
+{
+  "experiment_id": "offline_demo_stage9",
+  "created_at": "2026-09-16T19:56:01+08:00",
+  "result_kind": "test",
+  "status": "completed",
+  "ts_code": "600000.SH",
+  "data_range": {
+    "start_date": "2024-01-02",
+    "end_date": "2024-05-06"
+  },
+  "split_boundaries": {
+    "train": {
+      "name": "train",
+      "start_date": "2024-01-02",
+      "end_date": "2024-03-27",
+      "row_count": 62,
+      "start_index": 0,
+      "end_index": 61
+    },
+    "validation": {
+      "name": "validation",
+      "start_date": "2024-03-28",
+      "end_date": "2024-04-15",
+      "row_count": 13,
+      "start_index": 62,
+      "end_index": 74
+    },
+    "test": {
+      "name": "test",
+      "start_date": "2024-04-16",
+      "end_date": "2024-05-06",
+      "row_count": 15,
+      "start_index": 75,
+      "end_index": 89
+    }
+  },
+  "feature_columns": [
+    "close"
+  ],
+  "window_size": 5,
+  "model_parameters": {
+    "Naive": {},
+    "MA5": {
+      "window": 5
+    },
+    "MA10": {
+      "window": 10
+    },
+    "MA20": {
+      "window": 20
+    },
+    "SES": {
+      "smoothing_level": null,
+      "fitted_smoothing_level": 0.9999999850988388
+    },
+    "ARIMA": {
+      "order": [
+        1,
+        1,
+        0
+      ]
+    },
+    "LSTM": {
+      "input_size": 1,
+      "hidden_size": 8,
+      "num_layers": 1,
+      "dropout": 0.0,
+      "learning_rate": 0.01,
+      "batch_size": 8,
+      "max_epochs": 2,
+      "early_stopping_patience": 1,
+      "loss_function": "MSELoss",
+      "optimizer": "Adam",
+      "best_epoch": 2,
+      "best_validation_loss": 0.03592621936247899
+    }
+  },
+  "random_seed": 42,
+  "metrics": {
+    "Naive": {
+      "sample_count": 15,
+      "rmse": 0.09942419237742743,
+      "mae": 0.0872333991640931,
+      "r2": 0.7631383875606124,
+      "direction_accuracy": 0.0,
+      "relative_naive_rmse_improvement_pct": 0.0
+    },
+    "MA5": {
+      "sample_count": 15,
+      "rmse": 0.2953578651292803,
+      "mae": 0.267331179435119,
+      "r2": -1.0902951751069292,
+      "direction_accuracy": 0.13333333333333333,
+      "relative_naive_rmse_improvement_pct": -197.06840766486957
+    },
+    "MA10": {
+      "sample_count": 15,
+      "rmse": 0.44147791894433763,
+      "mae": 0.39767269924597953,
+      "r2": -3.670125064593594,
+      "direction_accuracy": 0.26666666666666666,
+      "relative_naive_rmse_improvement_pct": -344.0347046204095
+    },
+    "MA20": {
+      "sample_count": 15,
+      "rmse": 0.46129426743625984,
+      "mae": 0.3977996454721354,
+      "r2": -4.098784452204408,
+      "direction_accuracy": 0.4666666666666667,
+      "relative_naive_rmse_improvement_pct": -363.9658179823333
+    },
+    "SES": {
+      "sample_count": 15,
+      "rmse": 0.099424193890773,
+      "mae": 0.08723340055981552,
+      "r2": 0.7631383803500238,
+      "direction_accuracy": 0.06666666666666667,
+      "relative_naive_rmse_improvement_pct": -1.5221099992555034e-06
+    },
+    "ARIMA": {
+      "sample_count": 15,
+      "rmse": 0.027304163242919732,
+      "mae": 0.024038748563558462,
+      "r2": 0.9821364289693633,
+      "direction_accuracy": 0.9333333333333333,
+      "relative_naive_rmse_improvement_pct": 72.53770677938273
+    },
+    "LSTM": {
+      "sample_count": 15,
+      "rmse": 0.9289022834669961,
+      "mae": 0.9105132414108777,
+      "r2": -19.67524185679615,
+      "direction_accuracy": 0.5333333333333333,
+      "relative_naive_rmse_improvement_pct": -834.2819501522927
+    }
+  },
+  "elapsed_seconds": {
+    "LSTM_training": 0.23882800000001225,
+    "Naive": 0.005445100000088132,
+    "MA5": 0.0032455999999001506,
+    "MA10": 0.00284590000001117,
+    "MA20": 0.0030187000002115383,
+    "SES": 0.007934699999623263,
+    "ARIMA": 0.1536866999999802,
+    "LSTM_prediction": 0.0047661000003245135,
+    "backtest_and_metrics": 0.03922469999997702,
+    "total": 0.45899550000012823
+  },
+  "artifact_paths": {
+    "experiment_record": "offline_demo_stage9\\experiment_record.json",
+    "experiment_config": "offline_demo_stage9\\experiment_config.json",
+    "metrics_json": "offline_demo_stage9\\metrics.json",
+    "metrics_csv": "offline_demo_stage9\\metrics.csv",
+    "daily_predictions": "offline_demo_stage9\\daily_predictions.csv",
+    "model_comparison": "offline_demo_stage9\\model_comparison.csv",
+    "alignment_report": "offline_demo_stage9\\alignment.json",
+    "lstm_model": "offline_demo_stage9\\selected_lstm.pt",
+    "scaler": "offline_demo_stage9\\selected_lstm.scaler.json",
+    "training_history": "offline_demo_stage9\\training_history.json"
+  },
+  "evaluation_partition": "test",
+  "validation_usage": [
+    "early_stopping"
+  ],
+  "test_evaluation_count": 1,
+  "notes": [
+    "主对比仅包含 close 单变量基线与 close 单变量 LSTM。",
+    "验证集只用于 Early Stopping；测试集仅在模型固定后评价一次。",
+    "R² 不用于模型排名。"
+  ]
+}

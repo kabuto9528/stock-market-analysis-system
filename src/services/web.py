@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import tempfile
 import time
 from dataclasses import asdict, dataclass
@@ -222,7 +223,9 @@ class MarketDataWebService:
             ) from exc
 
     def load_offline_demo(self) -> MarketContext:
-        demo = self.config.project_root / "tests" / "fixtures" / "stage6_small_market.csv"
+        demo = self.config.project_root / "demo" / "offline_market.csv"
+        if not demo.is_file():
+            demo = self.config.project_root / "tests" / "fixtures" / "stage6_small_market.csv"
         try:
             loaded = load_market_csv(demo, expected_ts_code="600000.SH")
             return self._context(
@@ -507,6 +510,19 @@ class ExperimentWebService:
     def __init__(self, config: ProjectConfig) -> None:
         self.config = config
         self.store = ExperimentStore(config.paths.experiments_dir)
+        self._install_bundled_offline_demo()
+
+    def _install_bundled_offline_demo(self) -> None:
+        """首次运行时安装随项目交付的离线实验，不覆盖已有结果。"""
+
+        source = self.config.project_root / "demo" / "offline_demo_stage9"
+        target = self.config.paths.experiments_dir / source.name
+        if source.is_dir() and not target.exists():
+            try:
+                shutil.copytree(source, target)
+            except OSError:
+                # 离线样例安装失败不应阻止用户访问其余已有实验。
+                return
 
     def list_experiments(self) -> tuple[str, ...]:
         items: list[tuple[float, str]] = []
