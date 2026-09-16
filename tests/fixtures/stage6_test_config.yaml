@@ -1,22 +1,22 @@
 project:
-  name: 基于 LSTM 神经网络的股票价格预测系统
-  development_status: 阶段 6：评价指标、回测与实验管理
+  name: 阶段6固定小型测试
+  development_status: 阶段 6：评价指标、回测与实验管理测试
 
 data:
   split_ratios:
     train: 0.70
     validation: 0.15
     test: 0.15
-  window_size: 60
+  window_size: 5
 
 lstm:
-  hidden_size: 64
-  num_layers: 2
-  dropout: 0.2
-  batch_size: 32
-  learning_rate: 0.001
-  max_epochs: 100
-  early_stopping_patience: 10
+  hidden_size: 8
+  num_layers: 1
+  dropout: 0.0
+  batch_size: 8
+  learning_rate: 0.01
+  max_epochs: 2
+  early_stopping_patience: 1
   loss_function: MSELoss
   optimizer: Adam
 

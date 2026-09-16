@@ -126,6 +126,17 @@ python scripts/train_model.py --file data/example.csv --mode univariate --device
 
 训练多变量模型时将 `--mode` 改为 `multivariate`。
 
+## 评价、统一测试集回测与实验记录
+
+阶段 6 提供 RMSE、MAE、R²、三分类方向准确率 DA 和相对 Naive RMSE 提升率。所有模型必须先对齐公共 `target_date`；验证集只用于 Early Stopping/参数选择，测试集只在固定模型后评价一次。R² 仅作价格水平拟合度参考，不用于模型排名。详细规则见 `docs/评价与回测说明.md`。
+
+一次运行六种单变量基线与固定单变量 LSTM：
+
+```powershell
+python scripts/run_experiment.py --file data/example.csv --result-kind test --device auto
+```
+
+默认 `result-kind=test`，固定小样例和自动测试结果不得作为论文正式结论。实验按 `experiment_id` 保存配置 JSON、指标 JSON/CSV、逐日预测 CSV、模型比较 CSV、日期对齐记录、模型、Scaler 和训练历史。
 ## 运行测试
 
 测试不访问真实网络，Tushare 使用 mock：
