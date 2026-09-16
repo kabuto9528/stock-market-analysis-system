@@ -152,7 +152,7 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
-页面刷新不会自动获取数据或启动训练。阶段 5 已完成命令行 LSTM 训练能力；页面训练入口留待阶段 7 通过 service 层接入。
+页面刷新不会自动获取数据或启动训练。阶段 7 已接入完整交互页面；模型训练只会由按钮主动触发，页面刷新不会自动训练。
 
 ## 目录说明
 
@@ -166,3 +166,23 @@ python -m streamlit run app.py
 - `configs/`：YAML 配置
 - `tests/`：不访问真实网络的自动测试
 - `artifacts/`：模型与实验产物（不入版本库）
+
+
+## Streamlit 可视化系统
+
+启动命令：
+
+```powershell
+python -m streamlit run app.py
+```
+
+系统包含首页、数据获取、数据分析、模型训练、预测分析和模型对比六个页面。页面只调用 `src/services/` 业务服务：
+
+- 数据获取支持 Tushare、UTF-8 CSV、本地缓存和固定离线演示样例；
+- 数据分析提供 Plotly K 线、收盘价与 MA5/10/20、成交量、收益率分布和相关性热力图；
+- 模型训练支持单变量/多变量 LSTM 参数配置、实时 Epoch 进度、Early Stopping 和最佳模型保存；
+- 预测分析支持已有实验/预训练模型、测试集曲线、逐日误差、指标卡和下一交易日估算；
+- 模型对比展示 Naive、MA5/10/20、SES、ARIMA 与 LSTM，并可下载指标和逐日预测 CSV；
+- 当前数据、最近训练和实验 ID 保存在 `st.session_state`；服务对象使用 `cache_resource`，分析图与实验加载使用 `cache_data`。
+
+无 Token 时可上传 CSV 或加载本地缓存；“离线演示”使用固定小型测试样例，所有交互训练产物标记为 `test`，不得作为论文正式实验结论。多变量 LSTM 属于特征消融，不与传统单变量基线混入主排名。详细操作见 `docs/系统使用说明.md`。

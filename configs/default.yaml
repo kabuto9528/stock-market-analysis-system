@@ -1,6 +1,6 @@
 project:
   name: 基于 LSTM 神经网络的股票价格预测系统
-  development_status: 阶段 6：评价指标、回测与实验管理
+  development_status: 阶段 7：Streamlit 可视化系统
 
 data:
   split_ratios:

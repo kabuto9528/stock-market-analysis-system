@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -138,6 +139,8 @@ class LSTMTrainer:
         model: LSTMRegressor,
         train_loader: DataLoader,
         validation_loader: DataLoader,
+        *,
+        epoch_callback: Callable[[EpochRecord], None] | None = None,
     ) -> TrainingResult:
         _validate_loader(train_loader, "train")
         _validate_loader(validation_loader, "validation")
@@ -159,14 +162,15 @@ class LSTMTrainer:
             validation_loss = _mean_loss(
                 model, validation_loader, criterion, self.device, optimizer=None
             )
-            history.append(
-                EpochRecord(
-                    epoch=epoch,
-                    train_loss=train_loss,
-                    validation_loss=validation_loss,
-                    elapsed_seconds=time.perf_counter() - epoch_started,
-                )
+            record = EpochRecord(
+                epoch=epoch,
+                train_loss=train_loss,
+                validation_loss=validation_loss,
+                elapsed_seconds=time.perf_counter() - epoch_started,
             )
+            history.append(record)
+            if epoch_callback is not None:
+                epoch_callback(record)
             if validation_loss < best_loss - self.config.min_delta:
                 best_loss = validation_loss
                 best_epoch = epoch
