@@ -1,6 +1,6 @@
 # 基于 LSTM 神经网络的股票价格预测系统
 
-本项目使用截至第 t 个交易日的数据预测第 t+1 个交易日收盘价。当前完成阶段 2：可从 Tushare 或本地 CSV 获取标准日线行情，生成质量报告，并写入 Parquet 优先、CSV 回退的本地缓存。
+本项目使用截至第 t 个交易日的数据预测第 t+1 个交易日收盘价。当前已完成阶段 4：数据获取、清洗、时间划分、滑动窗口，以及 Naive、MA、SES、ARIMA 单变量基线。
 
 > 本系统仅用于教学与科研演示，不构成任何投资建议。
 
@@ -110,12 +110,16 @@ windows = build_windows(split, scaler, ("close",), window_size=60)
 Scaler 只能从 `TemporalSplit.train` 拟合；验证集与测试集只做转换。多变量特征顺序固定为
 `open, high, low, close, vol, amount`。详细规则和跨边界日期示例见 `docs/数据处理说明.md`。
 
+## 传统基线模型
+
+阶段 4 提供统一 `ForecastModel` 接口和 `target_date、previous_close、actual、predicted、model_name` 输出。默认基线为 Naive、MA5、MA10、MA20、SES 和 ARIMA；正式比较统一使用滚动一步协议，统计参数只在训练集拟合。详细规则见 `docs/基线模型说明.md`。
+
 ## 运行测试
 
 测试不访问真实网络，Tushare 使用 mock：
 
 ```powershell
-python -m pytest tests/test_preprocessing.py -q
+python -m pytest tests/test_baselines.py -q
 python -m pytest -q
 ```
 
@@ -125,14 +129,15 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
-页面刷新不会自动获取数据或启动训练。阶段 3 已完成数据清洗、时间划分、缩放和窗口构造，尚未进入基线模型或 LSTM 训练。
+页面刷新不会自动获取数据或启动训练。阶段 4 已完成传统基线模型，尚未进入 LSTM 训练。
 
 ## 目录说明
 
 - `src/data/`：标准字段、CSV、Tushare、质量报告、缓存、清洗、时间划分、Scaler 与窗口数据集
 - `scripts/fetch_data.py`：阶段 2 命令行入口
 - `data/cache/`：本地行情缓存（不入版本库）
-- `src/models/`、`src/baselines/`、`src/evaluation/`：后续阶段实现
+- `src/baselines/`：Naive、移动平均、SES、ARIMA 与统一回测协议
+- `src/models/`、`src/evaluation/`：后续阶段实现
 - `configs/`：YAML 配置
 - `tests/`：不访问真实网络的自动测试
 - `artifacts/`：模型与实验产物（不入版本库）
