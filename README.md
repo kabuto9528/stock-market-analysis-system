@@ -1,6 +1,6 @@
 # 基于 LSTM 神经网络的股票价格预测系统
 
-本项目使用截至第 t 个交易日的数据预测第 t+1 个交易日收盘价。当前已完成阶段 4：数据获取、清洗、时间划分、滑动窗口，以及 Naive、MA、SES、ARIMA 单变量基线。
+本项目使用截至第 t 个交易日的数据预测第 t+1 个交易日收盘价。当前已完成阶段 5：数据获取、清洗、时间划分、滑动窗口、传统基线，以及 PyTorch LSTM 训练、预测与持久化。
 
 > 本系统仅用于教学与科研演示，不构成任何投资建议。
 
@@ -114,12 +114,24 @@ Scaler 只能从 `TemporalSplit.train` 拟合；验证集与测试集只做转�
 
 阶段 4 提供统一 `ForecastModel` 接口和 `target_date、previous_close、actual、predicted、model_name` 输出。默认基线为 Naive、MA5、MA10、MA20、SES 和 ARIMA；正式比较统一使用滚动一步协议，统计参数只在训练集拟合。详细规则见 `docs/基线模型说明.md`。
 
+## PyTorch LSTM
+
+阶段 5 使用同一个 `LSTMRegressor` 支持单变量 `close` 和六变量输入。训练器固定使用 MSELoss、Adam 和验证集 Early Stopping，训练结束后恢复验证损失最低的权重；测试集不参与训练、调参或早停。模型、Scaler 和逐 epoch 训练历史分别保存。详细规则见 `docs/LSTM模型说明.md`。
+
+从本地 CSV 训练单变量模型：
+
+```powershell
+python scripts/train_model.py --file data/example.csv --mode univariate --device auto
+```
+
+训练多变量模型时将 `--mode` 改为 `multivariate`。
+
 ## 运行测试
 
 测试不访问真实网络，Tushare 使用 mock：
 
 ```powershell
-python -m pytest tests/test_baselines.py -q
+python -m pytest tests/test_lstm.py -q
 python -m pytest -q
 ```
 
@@ -129,15 +141,17 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
-页面刷新不会自动获取数据或启动训练。阶段 4 已完成传统基线模型，尚未进入 LSTM 训练。
+页面刷新不会自动获取数据或启动训练。阶段 5 已完成命令行 LSTM 训练能力；页面训练入口留待阶段 7 通过 service 层接入。
 
 ## 目录说明
 
 - `src/data/`：标准字段、CSV、Tushare、质量报告、缓存、清洗、时间划分、Scaler 与窗口数据集
+- `src/models/`：LSTM 网络、随机种子、训练器、预测器与模型持久化
+- `scripts/train_model.py`：从本地 CSV 训练单变量或多变量 LSTM
 - `scripts/fetch_data.py`：阶段 2 命令行入口
 - `data/cache/`：本地行情缓存（不入版本库）
 - `src/baselines/`：Naive、移动平均、SES、ARIMA 与统一回测协议
-- `src/models/`、`src/evaluation/`：后续阶段实现
+- `src/evaluation/`：阶段 6 实现评价指标、回测与实验管理
 - `configs/`：YAML 配置
 - `tests/`：不访问真实网络的自动测试
 - `artifacts/`：模型与实验产物（不入版本库）
