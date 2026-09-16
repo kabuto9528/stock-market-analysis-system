@@ -1,0 +1,68 @@
+project:
+  stage: 8
+  result_kind: formal
+  protocol_version: stage8-v1
+
+data:
+  minimum_stocks: 3
+  preferred_stocks: 5
+  minimum_rows_per_stock: 500
+  start_date: '2018-01-01'
+  end_date: '2025-12-31'
+  stocks:
+    - ts_code: 600519.SH
+      name: 贵州茅台
+      industry: 食品饮料
+      file: data/formal/600519.SH.csv
+    - ts_code: 600036.SH
+      name: 招商银行
+      industry: 银行
+      file: data/formal/600036.SH.csv
+    - ts_code: 000333.SZ
+      name: 美的集团
+      industry: 家用电器
+      file: data/formal/000333.SZ.csv
+    - ts_code: 601318.SH
+      name: 中国平安
+      industry: 非银金融
+      file: data/formal/601318.SH.csv
+    - ts_code: 300750.SZ
+      name: 宁德时代
+      industry: 电力设备
+      file: data/formal/300750.SZ.csv
+
+protocol:
+  split_ratios: [0.70, 0.15, 0.15]
+  target_column: close
+  univariate_features: [close]
+  multivariate_features: [open, high, low, close, vol, amount]
+  baseline_models: [Naive, MA5, MA10, MA20, SES, ARIMA]
+  arima_order: [1, 1, 0]
+  random_seeds: [42, 2024, 2026]
+  tuning_seed: 42
+  tuning_metric: validation_rmse
+  test_evaluation_count: 1
+
+lstm_defaults:
+  window_size: 60
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.2
+  batch_size: 32
+  learning_rate: 0.001
+  max_epochs: 100
+  early_stopping_patience: 10
+  min_delta: 0.0
+
+controlled_parameter_experiments:
+  order: [window_size, hidden_size, num_layers, learning_rate]
+  window_size: [20, 30, 60]
+  hidden_size: [32, 64, 128]
+  num_layers: [1, 2]
+  learning_rate: [0.01, 0.001, 0.0001]
+
+outputs:
+  root: artifacts/stage8
+  tables_dir: tables
+  figures_dir: figures
+  experiments_dir: experiments
