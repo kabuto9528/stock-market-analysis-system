@@ -38,6 +38,8 @@ def load_market_csv(
         raise CSVImportError(f"CSV 编码解析失败：{csv_path}；默认要求 UTF-8。") from exc
     except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
         raise CSVImportError(f"CSV 读取失败：{csv_path}；{exc}") from exc
+    if raw.empty:
+        raise CSVImportError(f"CSV 中没有行情记录：{csv_path}")
 
     try:
         coerced = coerce_market_data(raw, expected_ts_code=expected_ts_code)

@@ -62,3 +62,21 @@ def test_load_csv_reports_invalid_numeric_value(tmp_path: Path) -> None:
 
     with pytest.raises(CSVImportError, match="字段 close 存在无法转换"):
         load_market_csv(path)
+
+
+def test_load_csv_reports_invalid_date(tmp_path: Path) -> None:
+    path = tmp_path / "invalid_date.csv"
+    rows = _rows()
+    rows[0][1] = "2024-13-40"
+    pd.DataFrame(rows, columns=COLUMNS).to_csv(path, index=False)
+
+    with pytest.raises(CSVImportError, match="trade_date 存在缺失或无法解析"):
+        load_market_csv(path)
+
+
+def test_load_csv_rejects_header_only_empty_data(tmp_path: Path) -> None:
+    path = tmp_path / "empty.csv"
+    pd.DataFrame(columns=COLUMNS).to_csv(path, index=False)
+
+    with pytest.raises(CSVImportError, match="没有行情记录"):
+        load_market_csv(path)

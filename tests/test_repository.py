@@ -5,7 +5,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.data import CacheError, MarketDataRepository, safe_stock_filename
+from src.data import (
+    CacheError,
+    MarketDataRepository,
+    canonicalize_market_data,
+    safe_stock_filename,
+)
 
 
 def _frame(rows: list[tuple[str, float]]) -> pd.DataFrame:
@@ -86,3 +91,14 @@ def test_safe_stock_filename_prevents_path_traversal() -> None:
     assert "\\" not in filename
     assert ".." not in filename
     assert filename != "600000.SH"
+
+
+def test_repository_cache_roundtrip_preserves_standard_data(tmp_path: Path) -> None:
+    repository = MarketDataRepository(tmp_path)
+    source = _frame([("2024-01-03", 10.2), ("2024-01-02", 10.0)])
+    expected, _ = canonicalize_market_data(source)
+
+    repository.save(source)
+    loaded = repository.load("600000.SH")
+
+    pd.testing.assert_frame_equal(loaded, expected)
