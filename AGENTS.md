@@ -7,7 +7,7 @@
 ## 一、项目
 
 - **名称**：基于LSTM神经网络的股票价格预测系统
-- **目录**：`D:\1graduation_project`
+- **目录**：项目仓库根目录（禁止在代码或配置中硬编码本机绝对路径）
 - **依据**：`开题报告.md`（需求与范围的唯一来源）
 - **技术栈**：Python 3.12 / PyTorch / Streamlit / Pandas / NumPy / Scikit-learn / Statsmodels / Plotly / Tushare / PyYAML / python-dotenv / Joblib / Pytest
 - **执行主体**：单个 Codex Agent，严格串行，不创建或委派任何子 Agent，不并行修改文件
