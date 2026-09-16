@@ -1,6 +1,6 @@
 project:
   name: 基于 LSTM 神经网络的股票价格预测系统
-  development_status: 阶段 2：股票数据获取、本地 CSV 与行情缓存
+  development_status: 阶段 3：数据清洗、时间划分与滑动窗口
 
 data:
   split_ratios:

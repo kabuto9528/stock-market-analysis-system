@@ -96,12 +96,26 @@ python scripts/fetch_data.py --incremental tushare --ts-code 600000.SH --start-d
 
 默认配置位于 `configs/default.yaml`，包括 70%/15%/15% 时间顺序划分比例、60 个交易日窗口、LSTM 默认超参数、随机种子和项目相对存储目录。运行目录由 `src/config.py` 解析，配置中不得写用户绝对路径或固定盘符。
 
+## 数据预处理
+
+阶段 3 数据层按以下顺序调用：
+
+```python
+cleaned = clean_market_data(raw_frame)
+split = split_by_time(cleaned.data, (0.70, 0.15, 0.15))
+scaler = ScalerManager.fit(split, ("close",))
+windows = build_windows(split, scaler, ("close",), window_size=60)
+```
+
+Scaler 只能从 `TemporalSplit.train` 拟合；验证集与测试集只做转换。多变量特征顺序固定为
+`open, high, low, close, vol, amount`。详细规则和跨边界日期示例见 `docs/数据处理说明.md`。
+
 ## 运行测试
 
-阶段 2 测试不访问真实网络，Tushare 使用 mock：
+测试不访问真实网络，Tushare 使用 mock：
 
 ```powershell
-python -m pytest tests/test_csv_loader.py tests/test_data_quality.py tests/test_repository.py tests/test_tushare_client.py tests/test_fetch_data_cli.py -q
+python -m pytest tests/test_preprocessing.py -q
 python -m pytest -q
 ```
 
@@ -111,11 +125,11 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
-页面刷新不会自动获取数据或启动训练。阶段 2 尚未进入数据清洗、时间划分、滑动窗口或模型训练。
+页面刷新不会自动获取数据或启动训练。阶段 3 已完成数据清洗、时间划分、缩放和窗口构造，尚未进入基线模型或 LSTM 训练。
 
 ## 目录说明
 
-- `src/data/`：标准字段、CSV、Tushare、质量报告与缓存仓库
+- `src/data/`：标准字段、CSV、Tushare、质量报告、缓存、清洗、时间划分、Scaler 与窗口数据集
 - `scripts/fetch_data.py`：阶段 2 命令行入口
 - `data/cache/`：本地行情缓存（不入版本库）
 - `src/models/`、`src/baselines/`、`src/evaluation/`：后续阶段实现
