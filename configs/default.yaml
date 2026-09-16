@@ -1,0 +1,31 @@
+project:
+  name: 基于 LSTM 神经网络的股票价格预测系统
+  development_status: 阶段 2：股票数据获取、本地 CSV 与行情缓存
+
+data:
+  split_ratios:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+  window_size: 60
+
+lstm:
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.2
+  batch_size: 32
+  learning_rate: 0.001
+  max_epochs: 100
+  early_stopping_patience: 10
+  loss_function: MSELoss
+  optimizer: Adam
+
+paths:
+  data_dir: data
+  artifacts_dir: artifacts
+  cache_dir: data/cache
+  models_dir: artifacts/models
+  experiments_dir: artifacts/experiments
+  logs_dir: artifacts/logs
+
+random_seed: 42

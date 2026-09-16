@@ -1,0 +1,11 @@
+{
+  "ts_code": "600000.SH",
+  "storage_format": "parquet",
+  "file_name": "600000.SH.parquet",
+  "row_count": 1,
+  "start_date": "2024-01-04",
+  "end_date": "2024-01-04",
+  "updated_at": "2026-09-16T02:08:45.206297+00:00",
+  "quality_report": "600000.SH.quality.json",
+  "fallback_reason": null
+}

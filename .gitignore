@@ -1,35 +1,44 @@
-# ---- 虚拟环境 ----
+# ---- Python 虚拟环境 ----
 .venv/
 venv/
 env/
 
-# ---- 密钥：绝对不能提交 ----
+# ---- 环境变量与密钥 ----
 .env
+.env.*
+!.env.example
 
-# ---- 模型权重：体积大，可重新训练 ----
-artifacts/models/
-artifacts/**/*.pt
-artifacts/**/*.pth
-
-# ---- Python 缓存 ----
+# ---- Python / 测试 / 工具缓存 ----
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
-# ---- Jupyter ----
+# ---- Jupyter / 编辑器 / 系统文件 ----
 .ipynb_checkpoints/
-
-# ---- 编辑器与系统 ----
 .vscode/
 .idea/
 Thumbs.db
 desktop.ini
 
-# ---- 临时与归档 ----
-.archive/
-.workbuddy/
+# ---- 行情数据与运行缓存 ----
+data/*
+!data/.gitkeep
+
+# ---- 模型与实验产物 ----
+artifacts/*
+!artifacts/.gitkeep
+*.pt
+*.pth
+*.ckpt
+
+# ---- 日志与临时文件 ----
 *.log
 *.tmp
+*.temp
+.archive/
+.workbuddy/
