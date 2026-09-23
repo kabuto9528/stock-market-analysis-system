@@ -7,6 +7,11 @@ st.set_page_config(page_title="模型训练", page_icon="🧠", layout="wide")
 init_session(); service = get_web_service(); context = require_market_context(); defaults = service.config
 st.title(f"LSTM 模型训练：{context.ts_code}")
 st.warning("训练只会在点击“开始训练”后执行；页面刷新不会自动启动训练。测试集不参与调参或 Early Stopping。")
+if context.source.startswith("内置固定小型测试样例"):
+    st.info(
+        "当前是 90 行离线演示样例。推荐直接到“预测分析”使用 offline_demo_stage9；"
+        "默认 100 Epoch 的现场训练在 CPU 上会等待较久。"
+    )
 
 with st.form("training_form"):
     mode_cn = st.radio("输入特征", ["单变量（仅 close）", "多变量（OHLC、成交量、成交额）"], horizontal=True)
@@ -38,7 +43,11 @@ if submitted:
         rows.append({"epoch": record.epoch, "train_loss": record.train_loss, "validation_loss": record.validation_loss})
         progress.progress(min(record.epoch / request.max_epochs, 1.0), text=f"Epoch {record.epoch}/{request.max_epochs}")
         status.caption(f"训练损失 {record.train_loss:.6f}；验证损失 {record.validation_loss:.6f}")
-        live_chart.plotly_chart(service.experiments.loss_figure(pd.DataFrame(rows)), width="stretch")
+        live_chart.plotly_chart(
+            service.experiments.loss_figure(pd.DataFrame(rows)),
+            width="stretch",
+            key=f"training_live_loss_epoch_{record.epoch}",
+        )
     try:
         with st.spinner("正在训练并保存验证损失最低的模型……"):
             summary = service.training.train(context.frame, request, progress_callback=on_epoch)
@@ -46,6 +55,7 @@ if submitted:
         st.session_state.last_training_summary = summary
         st.session_state.last_experiment_id = summary.experiment_id
         st.success(f"训练完成，实验 ID：{summary.experiment_id}")
+        live_chart.empty()
     except Exception as exc:
         progress.empty(); show_error(exc)
 
@@ -57,5 +67,9 @@ if summary is not None:
     c2.metric("最低验证损失", f"{summary.best_validation_loss:.6f}")
     c3.metric("总耗时", f"{summary.elapsed_seconds:.2f} 秒")
     c4.metric("设备", summary.device)
-    st.plotly_chart(service.experiments.loss_figure(summary.history), width="stretch")
+    st.plotly_chart(
+        service.experiments.loss_figure(summary.history),
+        width="stretch",
+        key="training_summary_loss",
+    )
     st.caption("交互训练结果标记为 test，不作为阶段 8 的正式实验结论。")

@@ -1,13 +1,24 @@
 import streamlit as st
-from src.web_runtime import cached_experiment, get_web_service, init_session, show_error
+from src.web_runtime import (
+    cached_experiment,
+    get_web_service,
+    init_session,
+    require_market_context,
+    show_error,
+)
 
 st.set_page_config(page_title="模型对比", page_icon="⚖️", layout="wide")
-init_session(); service = get_web_service(); st.title("模型对比与结果下载")
-experiments = service.experiments.list_experiments()
+init_session(); service = get_web_service(); context = require_market_context()
+st.title(f"模型对比与结果下载：{context.ts_code}")
+experiments = service.experiments.list_experiments_for_stock(context.ts_code)
 if not experiments:
-    st.info("尚无实验结果。请先完成一次训练或放入已有实验产物。")
+    st.info(f"尚无股票 {context.ts_code} 的实验结果。请先完成一次训练或放入匹配的实验产物。")
     st.stop()
-experiment_id = st.selectbox("主实验", experiments)
+default_id = st.session_state.get("last_experiment_id")
+if context.source.startswith("内置固定小型测试样例") and "offline_demo_stage9" in experiments:
+    default_id = "offline_demo_stage9"
+experiment_index = experiments.index(default_id) if default_id in experiments else 0
+experiment_id = st.selectbox("主实验", experiments, index=experiment_index)
 secondary_options = ["不合并"] + [item for item in experiments if item != experiment_id]
 secondary_id = st.selectbox(
     "兼容的特征消融实验（可选）", secondary_options,
@@ -26,11 +37,17 @@ try:
     st.caption("主比较只包含 Naive、MA、SES、ARIMA 与仅 close 的单变量 LSTM；R² 不参与排名。")
     figures = service.experiments.metric_figures(main_comparison)
     c1, c2 = st.columns(2)
-    c1.plotly_chart(figures["rmse"], width="stretch")
-    c2.plotly_chart(figures["mae"], width="stretch")
+    c1.plotly_chart(figures["rmse"], width="stretch", key="comparison_main_rmse")
+    c2.plotly_chart(figures["mae"], width="stretch", key="comparison_main_mae")
     c3, c4 = st.columns(2)
-    c3.plotly_chart(figures["direction_accuracy"], width="stretch")
-    c4.plotly_chart(figures["relative_naive_rmse_improvement_pct"], width="stretch")
+    c3.plotly_chart(
+        figures["direction_accuracy"], width="stretch", key="comparison_main_da"
+    )
+    c4.plotly_chart(
+        figures["relative_naive_rmse_improvement_pct"],
+        width="stretch",
+        key="comparison_main_naive_improvement",
+    )
 
     if multi_mask.any():
         st.subheader("特征消融：单变量与多变量 LSTM")
@@ -38,8 +55,14 @@ try:
         st.caption("多变量 LSTM 仅在特征消融区展示，不与传统单变量模型混入主排名。")
         ablation_figures = service.experiments.metric_figures(lstm_ablation)
         a1, a2 = st.columns(2)
-        a1.plotly_chart(ablation_figures["rmse"], width="stretch")
-        a2.plotly_chart(ablation_figures["direction_accuracy"], width="stretch")
+        a1.plotly_chart(
+            ablation_figures["rmse"], width="stretch", key="comparison_ablation_rmse"
+        )
+        a2.plotly_chart(
+            ablation_figures["direction_accuracy"],
+            width="stretch",
+            key="comparison_ablation_da",
+        )
     else:
         st.info("当前未合并兼容的多变量实验；选择同股票、同区间和同划分的多变量实验后可查看特征消融。")
 

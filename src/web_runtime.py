@@ -12,8 +12,13 @@ def get_web_service() -> WebApplicationService:
     return WebApplicationService()
 
 
-@st.cache_data(show_spinner=False)
 def cached_analysis(frame: pd.DataFrame):
+    """生成分析图表。
+
+    Plotly Figure 不放入 ``st.cache_data``：图表生成耗时很短，而缓存大型图对象会增加
+    序列化成本，并可能在代码热重载或跨页面切换时让前端长期停留在骨架屏。
+    """
+
     return get_web_service().analysis.figures(frame)
 
 

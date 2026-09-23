@@ -8,11 +8,13 @@ st.caption(f"来源：{context.source}；所有图表由 Plotly 生成，可缩�
 try:
     with st.spinner("正在生成分析图表……"):
         figures = cached_analysis(context.frame)
-    st.plotly_chart(figures["kline"], width="stretch")
-    st.plotly_chart(figures["close_ma"], width="stretch")
+    st.plotly_chart(figures["kline"], width="stretch", key="analysis_kline")
+    st.plotly_chart(figures["close_ma"], width="stretch", key="analysis_close_ma")
     c1, c2 = st.columns(2)
-    c1.plotly_chart(figures["volume"], width="stretch")
-    c2.plotly_chart(figures["returns"], width="stretch")
-    st.plotly_chart(figures["correlation"], width="stretch")
+    c1.plotly_chart(figures["volume"], width="stretch", key="analysis_volume")
+    c2.plotly_chart(figures["returns"], width="stretch", key="analysis_returns")
+    st.plotly_chart(
+        figures["correlation"], width="stretch", key="analysis_correlation"
+    )
 except Exception as exc:
     show_error(exc)

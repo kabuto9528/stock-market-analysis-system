@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 
 import pandas as pd
+import plotly.io as pio
 import pytest
 
 from src.config import LSTMSettings, ProjectConfig, RuntimePaths, SplitRatios
@@ -58,6 +59,7 @@ def test_csv_offline_flow_cache_quality_and_plotly(web_service: WebApplicationSe
     figures = web_service.analysis.figures(cached.frame)
     assert set(figures) == {"kline", "close_ma", "volume", "returns", "correlation"}
     assert all(figure.layout.title.text for figure in figures.values())
+    assert all('"bdata"' not in pio.to_json(figure, validate=False) for figure in figures.values())
 
 
 def test_missing_token_returns_friendly_error(web_service: WebApplicationService, monkeypatch) -> None:
@@ -89,6 +91,8 @@ def test_training_progress_artifacts_prediction_and_download(web_service: WebApp
     assert not dashboard.predictions.empty
     assert (dashboard.directory / "selected_lstm.pt").is_file()
     assert web_service.experiments.csv_bytes(dashboard.comparison).startswith(b"\xef\xbb\xbf")
+    assert summary.experiment_id in web_service.experiments.list_experiments_for_stock("600000.SH")
+    assert web_service.experiments.list_experiments_for_stock("000001.SZ") == ()
     prediction = web_service.training.load_pretrained_prediction(summary.experiment_id, context.frame, device="cpu")
     assert len(prediction) == 1
     assert prediction["predicted"].notna().all()
@@ -136,3 +140,18 @@ def test_pages_delegate_core_work_to_service_layer() -> None:
     assert "if submitted:" in training_page
     assert "service.training.train" in training_page
     assert training_page.index("if submitted:") < training_page.index("service.training.train")
+
+    runtime = (root / "src" / "web_runtime.py").read_text(encoding="utf-8")
+    cached_analysis_block = runtime.split("def cached_analysis", 1)[0].rsplit("\n", 3)[-3:]
+    assert not any("cache_data" in line for line in cached_analysis_block)
+
+    for path in (root / "pages").glob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "plotly_chart"
+            ):
+                assert any(keyword.arg == "key" for keyword in node.keywords), path.name

@@ -4,11 +4,13 @@ from src.web_runtime import cached_experiment, get_web_service, init_session, re
 st.set_page_config(page_title="预测分析", page_icon="🔮", layout="wide")
 init_session(); service = get_web_service(); context = require_market_context()
 st.title("预测分析")
-experiments = service.experiments.list_experiments()
+experiments = service.experiments.list_experiments_for_stock(context.ts_code)
 if not experiments:
-    st.info("尚无实验结果。请先在模型训练页训练，或准备已有实验产物。")
+    st.info(f"尚无股票 {context.ts_code} 的实验结果。请先训练，或加载与该股票匹配的预训练资源。")
     st.stop()
 default_id = st.session_state.get("last_experiment_id")
+if context.source.startswith("内置固定小型测试样例") and "offline_demo_stage9" in experiments:
+    default_id = "offline_demo_stage9"
 index = experiments.index(default_id) if default_id in experiments else 0
 experiment_id = st.selectbox("选择实验 / 预训练模型", experiments, index=index)
 try:
@@ -22,8 +24,16 @@ try:
     c3.metric("方向准确率 DA", f"{metric['direction_accuracy']:.2%}")
     c4.metric("相对 Naive 提升率", f"{metric['relative_naive_rmse_improvement_pct']:.2f}%")
     st.caption("R² 仅作价格水平拟合度参考，不用于模型排名。")
-    st.plotly_chart(service.experiments.prediction_figure(dashboard.predictions, model), width="stretch")
-    st.plotly_chart(service.experiments.error_figure(dashboard.predictions, model), width="stretch")
+    st.plotly_chart(
+        service.experiments.prediction_figure(dashboard.predictions, model),
+        width="stretch",
+        key="prediction_actual_vs_predicted",
+    )
+    st.plotly_chart(
+        service.experiments.error_figure(dashboard.predictions, model),
+        width="stretch",
+        key="prediction_daily_error",
+    )
     st.subheader("下一交易日预测")
     if not dashboard.next_prediction.empty:
         st.dataframe(dashboard.next_prediction, width="stretch", hide_index=True)

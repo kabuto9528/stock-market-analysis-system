@@ -79,12 +79,62 @@ def test_tushare_client_returns_sorted_standard_data() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("plain_code", "expected_code"),
+    [
+        ("600519", "600519.SH"),
+        ("000001", "000001.SZ"),
+        ("300750", "300750.SZ"),
+        ("920001", "920001.BJ"),
+    ],
+)
+def test_tushare_client_infers_exchange_for_common_plain_codes(
+    plain_code: str, expected_code: str
+) -> None:
+    frame = _tushare_frame().assign(ts_code=expected_code)
+    api = FakeAPI(frame)
+    client = TushareClient("token", pro_api_factory=lambda token: api)
+
+    result = client.fetch_daily(plain_code, "2024-01-02", "2024-01-03")
+
+    assert result["ts_code"].unique().tolist() == [expected_code]
+    assert api.kwargs is not None and api.kwargs["ts_code"] == expected_code
+
+
+def test_tushare_client_retries_transient_network_failure() -> None:
+    class FlakyAPI:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def daily(self, **kwargs: str) -> pd.DataFrame:
+            self.calls += 1
+            if self.calls < 3:
+                raise RequestsConnectionError("temporary offline")
+            return _tushare_frame()
+
+    api = FlakyAPI()
+    delays: list[float] = []
+    client = TushareClient(
+        "token",
+        pro_api_factory=lambda token: api,
+        max_attempts=3,
+        retry_delay_seconds=0.25,
+        sleep_func=delays.append,
+    )
+
+    result = client.fetch_daily("600000", "2024-01-02", "2024-01-03")
+
+    assert len(result) == 2
+    assert api.calls == 3
+    assert delays == [0.25, 0.5]
+
+
 def test_tushare_client_rejects_illegal_stock_code_before_network_call() -> None:
     api = FakeAPI(_tushare_frame())
     client = TushareClient("token", pro_api_factory=lambda token: api)
 
     with pytest.raises(TushareAPIError, match="股票代码格式不合法"):
-        client.fetch_daily("600000", "2024-01-02", "2024-01-03")
+        client.fetch_daily("ABC", "2024-01-02", "2024-01-03")
     assert api.kwargs is None
 
 
@@ -101,9 +151,12 @@ def test_tushare_client_reports_network_failure() -> None:
     client = TushareClient(
         "token",
         pro_api_factory=lambda token: FakeAPI(RequestsConnectionError("offline")),
+        max_attempts=2,
+        retry_delay_seconds=0,
+        sleep_func=lambda seconds: None,
     )
 
-    with pytest.raises(TushareNetworkError, match="网络请求失败"):
+    with pytest.raises(TushareNetworkError, match="已尝试 2 次"):
         client.fetch_daily("600000.SH", "2024-01-02", "2024-01-03")
 
 

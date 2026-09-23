@@ -50,7 +50,7 @@ from .splitting import (
     assert_partition_dates_disjoint,
     split_by_time,
 )
-from .tushare_client import TushareClient
+from .tushare_client import TushareClient, normalize_tushare_code
 
 __all__ = [
     "CSVImportError",
@@ -93,6 +93,7 @@ __all__ = [
     "create_dataloaders",
     "generate_quality_report",
     "load_market_csv",
+    "normalize_tushare_code",
     "safe_stock_filename",
     "split_by_time",
     "validate_feature_columns",

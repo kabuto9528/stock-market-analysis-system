@@ -15,7 +15,6 @@ from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -238,12 +237,12 @@ class MarketDataWebService:
     @staticmethod
     def quality_table(quality: dict[str, object]) -> pd.DataFrame:
         rows = [
-            ("总行数", quality.get("total_rows")),
-            ("起始日期", quality.get("start_date")),
-            ("结束日期", quality.get("end_date")),
-            ("重复日期数", quality.get("duplicate_dates")),
-            ("负成交量", quality.get("negative_volume")),
-            ("负成交额", quality.get("negative_amount")),
+            ("总行数", str(quality.get("total_rows", ""))),
+            ("起始日期", str(quality.get("start_date") or "")),
+            ("结束日期", str(quality.get("end_date") or "")),
+            ("重复日期数", str(quality.get("duplicate_dates", ""))),
+            ("负成交量", str(quality.get("negative_volume", ""))),
+            ("负成交额", str(quality.get("negative_amount", ""))),
             ("质量检查", "通过" if quality.get("passed") else "存在警告"),
         ]
         warnings = quality.get("warnings") or []
@@ -261,10 +260,15 @@ class AnalysisWebService:
 
     def figures(self, frame: pd.DataFrame) -> dict[str, go.Figure]:
         data = self._prepared(frame)
+        dates = data["trade_date"].dt.strftime("%Y-%m-%d").tolist()
         figures: dict[str, go.Figure] = {}
         candle = go.Figure(go.Candlestick(
-            x=data["trade_date"], open=data["open"], high=data["high"],
-            low=data["low"], close=data["close"], name="K线",
+            x=dates,
+            open=data["open"].astype(float).tolist(),
+            high=data["high"].astype(float).tolist(),
+            low=data["low"].astype(float).tolist(),
+            close=data["close"].astype(float).tolist(),
+            name="K线",
         ))
         candle.update_layout(title="股票日线 K 线图", xaxis_title="交易日期", yaxis_title="价格",
                              xaxis_rangeslider_visible=False)
@@ -274,19 +278,29 @@ class AnalysisWebService:
         for window in (5, 10, 20):
             ma[f"MA{window}"] = ma["close"].rolling(window).mean()
         close = go.Figure()
-        close.add_trace(go.Scatter(x=ma["trade_date"], y=ma["close"], name="收盘价"))
+        ma_dates = ma["trade_date"].dt.strftime("%Y-%m-%d").tolist()
+        close.add_trace(go.Scatter(
+            x=ma_dates, y=ma["close"].astype(float).tolist(), name="收盘价"
+        ))
         for window in (5, 10, 20):
-            close.add_trace(go.Scatter(x=ma["trade_date"], y=ma[f"MA{window}"], name=f"MA{window}"))
+            close.add_trace(go.Scatter(
+                x=ma_dates, y=ma[f"MA{window}"].astype(float).tolist(),
+                name=f"MA{window}",
+            ))
         close.update_layout(title="收盘价与移动平均线", xaxis_title="交易日期", yaxis_title="价格")
         figures["close_ma"] = close
 
-        volume = px.bar(data, x="trade_date", y="vol", title="成交量走势",
-                        labels={"trade_date": "交易日期", "vol": "成交量"})
+        volume = go.Figure(go.Bar(
+            x=dates, y=data["vol"].astype(float).tolist(), name="成交量"
+        ))
+        volume.update_layout(title="成交量走势", xaxis_title="交易日期", yaxis_title="成交量")
         figures["volume"] = volume
 
         returns = data["close"].pct_change().dropna()
-        distribution = px.histogram(x=returns, nbins=40, title="日收益率分布",
-                                    labels={"x": "日收益率", "count": "频数"})
+        distribution = go.Figure(go.Histogram(
+            x=returns.astype(float).tolist(), nbinsx=40, name="日收益率"
+        ))
+        distribution.update_layout(title="日收益率分布")
         distribution.add_vline(x=0, line_dash="dash", annotation_text="零收益")
         distribution.update_layout(xaxis_title="日收益率", yaxis_title="频数")
         figures["returns"] = distribution
@@ -294,8 +308,9 @@ class AnalysisWebService:
         columns = ["open", "high", "low", "close", "vol", "amount"]
         corr = data[columns].corr()
         heatmap = go.Figure(go.Heatmap(
-            z=corr.to_numpy(), x=columns, y=columns, zmin=-1, zmax=1,
-            colorscale="RdBu", reversescale=True, text=np.round(corr.to_numpy(), 3),
+            z=corr.astype(float).values.tolist(), x=columns, y=columns, zmin=-1, zmax=1,
+            colorscale="RdBu", reversescale=True,
+            text=np.round(corr.to_numpy(), 3).tolist(),
             texttemplate="%{text}", colorbar_title="相关系数",
         ))
         heatmap.update_layout(title="行情特征相关性热力图", xaxis_title="特征", yaxis_title="特征")
@@ -532,6 +547,19 @@ class ExperimentWebService:
                 items.append((record.stat().st_mtime, path.name))
         return tuple(name for _, name in sorted(items, reverse=True))
 
+    def list_experiments_for_stock(self, ts_code: str) -> tuple[str, ...]:
+        """只列出与当前股票匹配的完整实验，避免误选其他股票模型。"""
+
+        matches: list[str] = []
+        for experiment_id in self.list_experiments():
+            try:
+                record = self.store.load(experiment_id)
+            except Exception:
+                continue
+            if record.ts_code == ts_code:
+                matches.append(experiment_id)
+        return tuple(matches)
+
     def stamp(self, experiment_id: str) -> int:
         path = self.store.experiment_directory(experiment_id) / "experiment_record.json"
         return path.stat().st_mtime_ns if path.is_file() else 0
@@ -589,17 +617,29 @@ class ExperimentWebService:
     def loss_figure(history: pd.DataFrame) -> go.Figure:
         fig = go.Figure()
         if not history.empty:
-            fig.add_trace(go.Scatter(x=history["epoch"], y=history["train_loss"], name="训练损失"))
-            fig.add_trace(go.Scatter(x=history["epoch"], y=history["validation_loss"], name="验证损失"))
+            epochs = history["epoch"].astype(int).tolist()
+            fig.add_trace(go.Scatter(
+                x=epochs, y=history["train_loss"].astype(float).tolist(), name="训练损失"
+            ))
+            fig.add_trace(go.Scatter(
+                x=epochs,
+                y=history["validation_loss"].astype(float).tolist(),
+                name="验证损失",
+            ))
         fig.update_layout(title="训练与验证损失", xaxis_title="训练轮次（Epoch）", yaxis_title="MSE 损失")
         return fig
 
     @staticmethod
     def prediction_figure(predictions: pd.DataFrame, model_name: str) -> go.Figure:
         data = predictions[predictions["model_name"] == model_name].copy()
+        dates = pd.to_datetime(data["target_date"]).dt.strftime("%Y-%m-%d").tolist()
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data["target_date"], y=data["actual"], name="真实收盘价"))
-        fig.add_trace(go.Scatter(x=data["target_date"], y=data["predicted"], name="预测收盘价"))
+        fig.add_trace(go.Scatter(
+            x=dates, y=data["actual"].astype(float).tolist(), name="真实收盘价"
+        ))
+        fig.add_trace(go.Scatter(
+            x=dates, y=data["predicted"].astype(float).tolist(), name="预测收盘价"
+        ))
         fig.update_layout(title=f"{model_name}：测试集真实值与预测值", xaxis_title="目标交易日", yaxis_title="收盘价")
         return fig
 
@@ -607,8 +647,14 @@ class ExperimentWebService:
     def error_figure(predictions: pd.DataFrame, model_name: str) -> go.Figure:
         data = predictions[predictions["model_name"] == model_name].copy()
         data["error"] = data["predicted"] - data["actual"]
-        fig = px.bar(data, x="target_date", y="error", title=f"{model_name}：逐日预测误差",
-                     labels={"target_date": "目标交易日", "error": "预测值 - 真实值"})
+        dates = pd.to_datetime(data["target_date"]).dt.strftime("%Y-%m-%d").tolist()
+        fig = go.Figure(go.Bar(
+            x=dates, y=data["error"].astype(float).tolist(), name="预测误差"
+        ))
+        fig.update_layout(
+            title=f"{model_name}：逐日预测误差",
+            xaxis_title="目标交易日", yaxis_title="预测值 - 真实值",
+        )
         fig.add_hline(y=0, line_dash="dash")
         return fig
 
@@ -622,9 +668,14 @@ class ExperimentWebService:
         }
         figures: dict[str, go.Figure] = {}
         for column, (title, y_title) in labels.items():
-            fig = px.bar(comparison, x="model_name", y=column, color="model_name", title=title,
-                         labels={"model_name": "模型", column: y_title})
-            fig.update_layout(showlegend=False)
+            fig = go.Figure(go.Bar(
+                x=comparison["model_name"].astype(str).tolist(),
+                y=comparison[column].astype(float).tolist(),
+                name=y_title,
+            ))
+            fig.update_layout(
+                title=title, xaxis_title="模型", yaxis_title=y_title, showlegend=False
+            )
             figures[column] = fig
         return figures
 

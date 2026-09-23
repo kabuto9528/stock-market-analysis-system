@@ -38,6 +38,10 @@ TUSHARE_TOKEN=你的Token
 
 ## 3. 启动系统
 
+Windows 下可直接双击项目根目录的 `启动系统.bat`。脚本会打开独立的 Edge 应用窗口；关闭该窗口后，本次 Streamlit 后台进程会自动结束。若 8501 已被占用，会自动选择后续可用端口。
+
+也可以手动启动：
+
 ```powershell
 python -m streamlit run app.py
 ```

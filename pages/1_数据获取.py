@@ -12,7 +12,10 @@ try:
     context = None
     if source == "Tushare 在线获取":
         c1, c2, c3 = st.columns(3)
-        code = c1.text_input("股票代码", "600000.SH", help="示例：600000.SH、000001.SZ")
+        code = c1.text_input(
+            "股票代码", "600000.SH",
+            help="支持 600000.SH、000001.SZ，也支持常见 A 股纯 6 位代码自动补后缀。",
+        )
         start = c2.date_input("起始日期", dt.date(2020, 1, 1))
         end = c3.date_input("结束日期", dt.date.today())
         save_cache = st.checkbox("获取成功后写入本地缓存", value=True)
@@ -42,7 +45,11 @@ try:
                 context = service.data.load_offline_demo()
     if context is not None:
         set_market_context(context)
+        if source == "离线演示":
+            st.session_state.last_experiment_id = "offline_demo_stage9"
         st.success(f"已加载 {context.ts_code}，共 {len(context.frame)} 行，来源：{context.source}")
+        if source == "离线演示":
+            st.info("离线样例已绑定预训练实验 offline_demo_stage9；请直接进入“预测分析”，无需现场训练。")
 except Exception as exc:
     show_error(exc)
 
