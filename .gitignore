@@ -44,6 +44,16 @@ artifacts/*
 .archive/
 .workbuddy/
 
+# ---- 本地论文、文献与写作资料（保留本地文件） ----
+/docs/paper/
+/docs/thesis/
+/docs/答辩源码与模块详解.md
+/论文与文献.md
+/scripts/assemble_thesis_draft.py
+/scripts/build_thesis_assets.py
+/scripts/check_thesis_draft.py
+/scripts/generate_thesis_docx.js
+
 # ---- 可提交的离线答辩资源 ----
 !demo/
 !demo/**
