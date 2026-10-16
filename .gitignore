@@ -49,6 +49,8 @@ artifacts/*
 /docs/thesis/
 /docs/答辩源码与模块详解.md
 /论文与文献.md
+/开发手册.md
+/开题报告.md
 /scripts/assemble_thesis_draft.py
 /scripts/build_thesis_assets.py
 /scripts/check_thesis_draft.py
